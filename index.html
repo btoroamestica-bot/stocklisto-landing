@@ -249,7 +249,63 @@
   footer { background: #08151f; color: #7b8ea3; text-align: center; padding: 34px 24px; font-size: 13px; }
   footer .foot-brand { color: #cbd5e1; font-weight: 700; margin-bottom: 6px; }
 
+  /* Botón fantasma para la barra de navegación (fondo claro) */
+  .btn-ghost { background: transparent; color: var(--ink); border: 1px solid var(--border); }
+  .btn-ghost:hover { background: var(--bg); }
+
+  /* Modal de login / registro */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; z-index: 100;
+    background: rgba(8,17,28,.55); backdrop-filter: blur(3px);
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-card {
+    background: #fff; border-radius: 18px; padding: 34px; width: 100%; max-width: 380px;
+    box-shadow: var(--shadow-lg); position: relative;
+  }
+  .modal-close {
+    position: absolute; top: 16px; right: 16px; background: none; border: none; cursor: pointer;
+    color: var(--muted); font-size: 15px; width: 28px; height: 28px; border-radius: 8px;
+  }
+  .modal-close:hover { background: var(--bg); }
+  .modal-tabs { display: flex; gap: 6px; background: var(--bg); border-radius: 10px; padding: 4px; margin-bottom: 18px; }
+  .modal-tab {
+    flex: 1; padding: 9px; border: none; background: transparent; border-radius: 8px; cursor: pointer;
+    font-family: inherit; font-size: 13.5px; font-weight: 600; color: var(--muted);
+  }
+  .modal-tab.active { background: #fff; color: var(--ink); box-shadow: var(--shadow); }
+  .modal-sub { color: var(--muted); font-size: 13.5px; margin: 0 0 18px; line-height: 1.5; }
+  #authForm { display: flex; flex-direction: column; gap: 12px; }
+  #authForm input {
+    padding: 13px 15px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--bg); font-size: 14px; font-family: inherit; color: var(--ink);
+  }
+  #authForm input:focus { outline: none; border-color: var(--verde); }
+  .form-msg-dark { font-size: 13.5px; min-height: 18px; }
+  .form-msg-dark.ok { color: var(--verde); }
+  .form-msg-dark.error { color: var(--alta); }
+
+  /* Vista de la app (post-login) */
+  #appView { display: none; min-height: 100vh; background: var(--bg); }
+  .app-topbar {
+    background: #fff; border-bottom: 1px solid var(--border); padding: 16px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .app-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: start; }
+  .app-card { background: #fff; border: 1px solid var(--border); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); }
+  .app-card-title { font-weight: 700; font-size: 14.5px; padding: 18px 20px; border-bottom: 1px solid var(--border); }
+  table.app-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  table.app-table th, table.app-table td { padding: 11px 20px; border-bottom: 1px solid #f0f2f5; text-align: left; }
+  table.app-table th { color: var(--muted); font-weight: 600; font-size: 11.5px; text-transform: uppercase; }
+  table.app-table tr:last-child td { border-bottom: none; }
+  .badge.estado-pendiente { background: #64748b; }
+  .badge.estado-confirmado { background: #2563eb; }
+  .badge.estado-cancelado { background: #94a3b8; }
+
   @media (max-width: 900px) {
+    #navPublica .nav-links { display: none; }
+    .app-grid { grid-template-columns: 1fr; }
     .hero-grid { grid-template-columns: 1fr; padding-bottom: 50px; }
     .hero-copy { text-align: center; }
     .hero p.sub { margin-left: auto; margin-right: auto; }
@@ -264,20 +320,44 @@
 </head>
 <body>
 
-<header>
+<header id="headerPublico">
   <div class="nav">
     <div class="brand"><span class="logo">
       <svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px;stroke:#fff"><path d="M12 2l8 4.5v9L12 20l-8-4.5v-9L12 2z"/><path d="M12 11l8-4.5M12 11v9M12 11L4 6.5"/></svg>
     </span> StockListo</div>
-    <div class="nav-links">
-      <a href="#problema">El problema</a>
-      <a href="#como-funciona">Cómo funciona</a>
-      <a href="#demo">Demo</a>
+    <div id="navPublica" style="display:flex; align-items:center; gap:28px;">
+      <div class="nav-links">
+        <a href="#problema">El problema</a>
+        <a href="#como-funciona">Cómo funciona</a>
+        <a href="#demo">Demo</a>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <button class="btn btn-ghost" onclick="abrirAuthModal('login')">Iniciar sesión</button>
+        <a href="#cta" class="btn btn-primary">Probar gratis</a>
+      </div>
     </div>
-    <a href="#cta" class="btn btn-primary">Probar gratis</a>
   </div>
 </header>
 
+<!-- Modal de inicio de sesión / registro (Supabase Auth real) -->
+<div class="modal-overlay" id="authOverlay">
+  <div class="modal-card">
+    <button class="modal-close" onclick="cerrarAuthModal()" aria-label="Cerrar">✕</button>
+    <div class="modal-tabs">
+      <button class="modal-tab active" id="tabLogin" onclick="cambiarAuthTab('login')">Iniciar sesión</button>
+      <button class="modal-tab" id="tabRegistro" onclick="cambiarAuthTab('registro')">Crear cuenta</button>
+    </div>
+    <p class="modal-sub" id="authSub">Ingresa con tu usuario registrado para ver el panel de tu restaurante.</p>
+    <form id="authForm" onsubmit="return manejarAuthSubmit(event)">
+      <input type="email" id="authEmail" placeholder="Email" required />
+      <input type="password" id="authPassword" placeholder="Contraseña" required minlength="6" />
+      <button type="submit" class="btn btn-verde" id="authSubmitBtn" style="width:100%; justify-content:center;">Iniciar sesión</button>
+      <div class="form-msg-dark" id="authMsg"></div>
+    </form>
+  </div>
+</div>
+
+<div id="landingContent">
 <section class="hero">
   <div class="hero-grid">
     <div class="hero-copy">
@@ -476,6 +556,47 @@
   <div class="foot-brand">StockListo</div>
   Sistema de control de inventario y pedidos automáticos para restaurantes de Chile · © 2026
 </footer>
+</div><!-- /landingContent -->
+
+<!-- Vista de la app real (post-login), datos leídos en vivo desde Supabase -->
+<div id="appView">
+  <div class="app-topbar">
+    <div class="brand"><span class="logo">
+      <svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px;stroke:#fff"><path d="M12 2l8 4.5v9L12 20l-8-4.5v-9L12 2z"/><path d="M12 11l8-4.5M12 11v9M12 11L4 6.5"/></svg>
+    </span> StockListo</div>
+    <div style="display:flex; align-items:center; gap:14px;">
+      <span style="font-size:13.5px; color:var(--muted);" id="appUserEmailTop"></span>
+      <button class="btn btn-ghost" onclick="cerrarSesion()">Cerrar sesión</button>
+    </div>
+  </div>
+  <div class="container" style="padding-top:40px; padding-bottom:70px;">
+    <div class="section-head" style="text-align:left; margin:0 0 32px;">
+      <div class="eyebrow">Panel del restaurante</div>
+      <h2>Hola, bienvenido de nuevo</h2>
+      <p>Este es el estado real de tu inventario y los pedidos que el agente ha generado, leídos en vivo desde la base de datos de StockListo.</p>
+    </div>
+    <div class="app-grid">
+      <div class="app-card">
+        <div class="app-card-title">Estado del inventario</div>
+        <table class="app-table">
+          <thead><tr><th>Ingrediente</th><th>Stock actual</th><th>Mínimo</th><th>Estado</th></tr></thead>
+          <tbody id="tablaInventario">
+            <tr><td colspan="4" style="text-align:center; color:var(--muted); padding:24px;">Cargando…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="app-card">
+        <div class="app-card-title">Pedidos generados por el agente</div>
+        <table class="app-table">
+          <thead><tr><th>Ingrediente</th><th>Cantidad</th><th>Proveedor</th><th>Estado</th></tr></thead>
+          <tbody id="tablaPedidos">
+            <tr><td colspan="4" style="text-align:center; color:var(--muted); padding:24px;">Cargando…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
   // --- Demo interactiva simulada (datos de ejemplo, no llama al backend real) ---
@@ -597,6 +718,172 @@
     }
     return false;
   }
+
+  // --- Login / registro con Supabase Auth real + panel de la app post-login ---
+  const SESION_STORAGE_KEY = 'stocklisto_sesion';
+  let sesionActual = null;
+  let authTabActual = 'login';
+
+  function abrirAuthModal(tab) {
+    document.getElementById('authOverlay').classList.add('open');
+    cambiarAuthTab(tab || 'login');
+  }
+
+  function cerrarAuthModal() {
+    document.getElementById('authOverlay').classList.remove('open');
+    document.getElementById('authMsg').textContent = '';
+    document.getElementById('authForm').reset();
+  }
+
+  function cambiarAuthTab(tab) {
+    authTabActual = tab;
+    document.getElementById('tabLogin').classList.toggle('active', tab === 'login');
+    document.getElementById('tabRegistro').classList.toggle('active', tab === 'registro');
+    document.getElementById('authSubmitBtn').textContent = tab === 'login' ? 'Iniciar sesión' : 'Crear cuenta';
+    document.getElementById('authSub').textContent = tab === 'login'
+      ? 'Ingresa con tu usuario registrado para ver el panel de tu restaurante.'
+      : 'Crea un usuario para acceder al panel de StockListo.';
+    document.getElementById('authMsg').textContent = '';
+  }
+
+  async function manejarAuthSubmit(evt) {
+    evt.preventDefault();
+    const email = document.getElementById('authEmail').value.trim();
+    const password = document.getElementById('authPassword').value;
+    const btn = document.getElementById('authSubmitBtn');
+    const msg = document.getElementById('authMsg');
+
+    btn.disabled = true;
+    msg.className = 'form-msg-dark';
+    msg.textContent = authTabActual === 'login' ? 'Iniciando sesión...' : 'Creando cuenta...';
+
+    const endpoint = authTabActual === 'login'
+      ? `${SUPABASE_URL}/auth/v1/token?grant_type=password`
+      : `${SUPABASE_URL}/auth/v1/signup`;
+
+    try {
+      const resp = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) {
+        throw new Error(data.msg || data.error_description || data.error || `Error ${resp.status}`);
+      }
+
+      if (authTabActual === 'registro' && !data.access_token) {
+        // Caso borde: si algún día se desactiva la auto-confirmación, queda pendiente de verificar por email.
+        msg.className = 'form-msg-dark ok';
+        msg.textContent = 'Cuenta creada. Revisa tu email para confirmarla y luego inicia sesión.';
+        cambiarAuthTab('login');
+        btn.disabled = false;
+        return false;
+      }
+
+      guardarSesion({ access_token: data.access_token, email: (data.user && data.user.email) || email });
+      cerrarAuthModal();
+      mostrarAppView();
+    } catch (err) {
+      msg.className = 'form-msg-dark error';
+      if (err.message === 'User already registered') {
+        msg.textContent = 'Ese email ya tiene una cuenta creada — prueba iniciar sesión.';
+      } else if (authTabActual === 'login') {
+        msg.textContent = 'Email o contraseña incorrectos.';
+      } else {
+        msg.textContent = 'No se pudo crear la cuenta: ' + err.message;
+      }
+    } finally {
+      btn.disabled = false;
+    }
+    return false;
+  }
+
+  function guardarSesion(sesion) {
+    sesionActual = sesion;
+    localStorage.setItem(SESION_STORAGE_KEY, JSON.stringify(sesion));
+  }
+
+  function cerrarSesion() {
+    sesionActual = null;
+    localStorage.removeItem(SESION_STORAGE_KEY);
+    document.getElementById('appView').style.display = 'none';
+    document.getElementById('landingContent').style.display = '';
+    document.getElementById('headerPublico').style.display = '';
+    window.scrollTo(0, 0);
+  }
+
+  async function mostrarAppView() {
+    document.getElementById('landingContent').style.display = 'none';
+    document.getElementById('headerPublico').style.display = 'none';
+    document.getElementById('appView').style.display = 'block';
+    document.getElementById('appUserEmailTop').textContent = sesionActual.email;
+    await cargarDatosApp();
+  }
+
+  async function cargarDatosApp() {
+    const headers = {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${sesionActual.access_token}`,
+    };
+    const tbodyInv = document.getElementById('tablaInventario');
+    const tbodyPed = document.getElementById('tablaPedidos');
+
+    try {
+      const [ingRes, provRes, pedRes] = await Promise.all([
+        fetch(`${SUPABASE_URL}/rest/v1/ingredientes?select=id,nombre,unidad,stock_actual,stock_minimo&order=nombre.asc`, { headers }),
+        fetch(`${SUPABASE_URL}/rest/v1/proveedores?select=id,nombre`, { headers }),
+        fetch(`${SUPABASE_URL}/rest/v1/pedidos?select=*&order=fecha_creado.desc`, { headers }),
+      ]);
+      if (!ingRes.ok || !provRes.ok || !pedRes.ok) throw new Error('No se pudo leer la base de datos');
+
+      const ingredientes = await ingRes.json();
+      const proveedores = await provRes.json();
+      const pedidos = await pedRes.json();
+
+      const provMap = Object.fromEntries(proveedores.map(p => [p.id, p.nombre]));
+      const ingMap = Object.fromEntries(ingredientes.map(i => [i.id, i]));
+
+      tbodyInv.innerHTML = ingredientes.map(i => {
+        const bajo = i.stock_actual < i.stock_minimo;
+        return `<tr>
+          <td>${i.nombre}</td>
+          <td>${i.stock_actual} ${i.unidad}</td>
+          <td>${i.stock_minimo} ${i.unidad}</td>
+          <td><span class="badge ${bajo ? 'rojo' : 'baja'}">${bajo ? 'BAJO' : 'OK'}</span></td>
+        </tr>`;
+      }).join('');
+
+      tbodyPed.innerHTML = pedidos.length === 0
+        ? '<tr><td colspan="4" style="text-align:center; color:var(--muted); padding:24px;">Sin pedidos generados todavía</td></tr>'
+        : pedidos.map(p => {
+            const ing = ingMap[p.ingrediente_id];
+            return `<tr>
+              <td>${ing ? ing.nombre : ('#' + p.ingrediente_id)}</td>
+              <td>${p.cantidad} ${ing ? ing.unidad : ''}</td>
+              <td>${provMap[p.proveedor_id] || ('#' + p.proveedor_id)}</td>
+              <td><span class="badge estado-${p.estado}">${p.estado}</span></td>
+            </tr>`;
+          }).join('');
+    } catch (err) {
+      console.error('Error cargando datos de la app:', err);
+      tbodyInv.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--alta); padding:24px;">No se pudo cargar el inventario</td></tr>';
+      tbodyPed.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--alta); padding:24px;">No se pudo cargar los pedidos</td></tr>';
+    }
+  }
+
+  // Al cargar la página: si ya había una sesión guardada, entra directo al panel.
+  (function restaurarSesion() {
+    const guardada = localStorage.getItem(SESION_STORAGE_KEY);
+    if (!guardada) return;
+    try {
+      const sesion = JSON.parse(guardada);
+      if (sesion && sesion.access_token) {
+        sesionActual = sesion;
+        mostrarAppView();
+      }
+    } catch (e) { /* sesión guardada corrupta, se ignora */ }
+  })();
 </script>
 
 </body>
