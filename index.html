@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>StockListo — El inventario de tu restaurante se repone solo</title>
+<meta name="description" content="Control de inventario con IA para restaurantes independientes en Chile. StockListo detecta stock bajo, decide qué pedir y notifica automáticamente." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --azul-oscuro: #0c2038;
+    --azul: #143458;
+    --azul-linea: #1c3d63;
+    --verde: #16a34a;
+    --verde-claro: #34d399;
+    --alta: #dc2626;
+    --media: #d97706;
+    --baja: #16a34a;
+    --ink: #16202e;
+    --muted: #64748b;
+    --border: #e6eaf0;
+    --bg: #f7f9fc;
+    --shadow: 0 1px 2px rgba(15,23,42,.04), 0 8px 24px -8px rgba(15,23,42,.10);
+    --shadow-lg: 0 24px 60px -20px rgba(12,32,56,.35);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: "Plus Jakarta Sans", -apple-system, "Segoe UI", Roboto, sans-serif;
+    color: var(--ink);
+    background: #fff;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { text-decoration: none; color: inherit; }
+  .container { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+  svg.icon { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* Header */
+  header {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(255,255,255,.85); backdrop-filter: saturate(180%) blur(10px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 24px; max-width: 1120px; margin: 0 auto;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 18px; letter-spacing: -.02em; }
+  .brand .logo {
+    width: 34px; height: 34px; border-radius: 10px;
+    background: linear-gradient(145deg, var(--azul-oscuro), #1c4a72);
+    display: flex; align-items: center; justify-content: center; color: #fff;
+    box-shadow: 0 4px 10px -2px rgba(12,32,56,.4);
+  }
+  .nav-links { display: flex; align-items: center; gap: 30px; font-size: 14px; color: var(--muted); font-weight: 500; }
+  .nav-links a { transition: color .15s; }
+  .nav-links a:hover { color: var(--ink); }
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 11px 20px; border-radius: 10px; font-size: 14px; font-weight: 600;
+    border: none; cursor: pointer; transition: all .15s; font-family: inherit;
+  }
+  .btn-primary { background: var(--azul-oscuro); color: #fff; box-shadow: var(--shadow); }
+  .btn-primary:hover { background: var(--azul); transform: translateY(-1px); }
+  .btn-verde { background: linear-gradient(145deg, var(--verde), #12924a); color: #fff; box-shadow: 0 8px 20px -6px rgba(22,163,74,.5); }
+  .btn-verde:hover { transform: translateY(-1px); box-shadow: 0 10px 24px -6px rgba(22,163,74,.6); }
+  .btn-outline { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.3); }
+  .btn-outline:hover { background: rgba(255,255,255,0.08); }
+  .btn:disabled { opacity: .6; cursor: not-allowed; transform: none !important; }
+
+  /* Hero */
+  .hero {
+    position: relative; overflow: hidden;
+    background: radial-gradient(1100px 520px at 15% -10%, #1c4a72 0%, transparent 60%),
+                radial-gradient(900px 500px at 100% 0%, #123a4a 0%, transparent 55%),
+                linear-gradient(170deg, var(--azul-oscuro), #0a1a2c 85%);
+    color: #fff; padding: 96px 24px 0;
+  }
+  .hero-grid {
+    max-width: 1120px; margin: 0 auto; display: grid;
+    grid-template-columns: 1.05fr .95fr; gap: 40px; align-items: center;
+    padding-bottom: 70px;
+  }
+  .hero-copy { text-align: left; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.16);
+    padding: 7px 16px; border-radius: 999px; font-size: 13px; margin-bottom: 26px; color: #cbd5e1;
+  }
+  .pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--verde-claro); box-shadow: 0 0 0 3px rgba(52,211,153,.2); }
+  .hero h1 { font-size: 50px; line-height: 1.1; font-weight: 800; margin: 0 0 20px; letter-spacing: -.02em; }
+  .hero h1 .accent { color: var(--verde-claro); }
+  .hero p.sub { font-size: 17px; color: #b9c6d6; max-width: 520px; margin: 0 0 34px; line-height: 1.6; }
+  .hero-ctas { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 34px; }
+  .trust { display: flex; gap: 24px; flex-wrap: wrap; font-size: 13px; color: #94a3b8; }
+  .trust span { display: flex; align-items: center; gap: 7px; }
+  .trust svg.icon { width: 16px; height: 16px; color: var(--verde-claro); }
+
+  /* Mockup del producto en el hero */
+  .mockup {
+    background: #fff; border-radius: 16px; box-shadow: var(--shadow-lg);
+    overflow: hidden; transform: perspective(1200px) rotateY(-6deg) rotateX(2deg);
+    border: 1px solid rgba(255,255,255,.08);
+  }
+  .mockup-bar { background: #eef1f5; padding: 10px 14px; display: flex; gap: 6px; }
+  .mockup-bar span { width: 10px; height: 10px; border-radius: 50%; background: #d3d9e2; }
+  .mockup-body { padding: 20px; }
+  .mockup-title { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 14px; }
+  .mockup-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f2f5; }
+  .mockup-row:last-of-type { border-bottom: none; }
+  .mockup-row .nombre { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+  .mockup-row .barra-bg { width: 90px; height: 7px; border-radius: 4px; background: #eef1f5; overflow: hidden; margin-top: 5px; }
+  .mockup-row .barra-fill { height: 100%; border-radius: 4px; }
+  .mockup-pedido {
+    margin-top: 16px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px;
+    padding: 12px 14px; display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: #166534;
+  }
+  .mockup-pedido svg.icon { width: 16px; height: 16px; color: #16a34a; flex-shrink: 0; }
+
+  section { padding: 88px 24px; }
+  .section-head { text-align: center; max-width: 620px; margin: 0 auto 52px; }
+  .eyebrow { color: var(--verde); font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; }
+  .section-head h2 { font-size: 34px; font-weight: 800; margin: 0 0 14px; letter-spacing: -.02em; }
+  .section-head p { color: var(--muted); font-size: 16px; line-height: 1.6; }
+
+  /* Problema */
+  .problema { background: var(--bg); }
+  .cards3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 32px; }
+  .card {
+    background: #fff; border: 1px solid var(--border); border-radius: 16px; padding: 30px;
+    box-shadow: var(--shadow); transition: transform .2s, box-shadow .2s;
+  }
+  .card:hover { transform: translateY(-3px); box-shadow: 0 16px 34px -14px rgba(15,23,42,.16); }
+  .card .icono-card {
+    width: 42px; height: 42px; border-radius: 11px; background: #fef2f2; color: var(--alta);
+    display: flex; align-items: center; justify-content: center; margin-bottom: 16px;
+  }
+  .card .monto { font-size: 30px; font-weight: 800; color: var(--azul-oscuro); margin: 4px 0; letter-spacing: -.01em; }
+  .card .label { font-weight: 700; font-size: 15px; }
+  .card .desc { color: var(--muted); font-size: 13.5px; margin-top: 6px; line-height: 1.5; }
+  .total-banner {
+    background: linear-gradient(135deg, var(--azul-oscuro), #163a5c);
+    color: #fff; border-radius: 16px; padding: 28px 32px;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+    box-shadow: var(--shadow-lg);
+  }
+  .total-banner .num { font-size: 30px; font-weight: 800; color: var(--verde-claro); letter-spacing: -.01em; }
+
+  /* Como funciona */
+  .pasos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; position: relative; }
+  .paso { text-align: center; padding: 0 8px; }
+  .paso .icono {
+    width: 60px; height: 60px; border-radius: 16px;
+    background: linear-gradient(145deg, var(--azul-oscuro), #1c4a72); color: #fff;
+    display: flex; align-items: center; justify-content: center; margin: 0 auto 18px;
+    box-shadow: 0 10px 22px -8px rgba(12,32,56,.45);
+  }
+  .paso .num { font-size: 12px; font-weight: 800; color: var(--verde); margin-bottom: 6px; letter-spacing: .04em; }
+  .paso h3 { font-size: 15.5px; margin: 0 0 6px; font-weight: 700; }
+  .paso p { font-size: 13.5px; color: var(--muted); margin: 0; line-height: 1.5; }
+
+  /* Testimonio */
+  .testimonio {
+    background: linear-gradient(135deg, #f0fdf4, #f7f9fc);
+    border: 1px solid #dcfce7; border-radius: 20px; padding: 44px 48px;
+    max-width: 780px; margin: 0 auto; text-align: center; position: relative;
+  }
+  .testimonio .quote-mark { font-size: 60px; color: #bbf7d0; line-height: 1; font-family: Georgia, serif; }
+  .testimonio p.texto { font-size: 20px; font-weight: 600; color: var(--ink); line-height: 1.5; margin: 8px 0 20px; }
+  .testimonio .autor { display: flex; align-items: center; justify-content: center; gap: 10px; }
+  .testimonio .avatar {
+    width: 38px; height: 38px; border-radius: 50%; background: var(--azul-oscuro); color: #fff;
+    display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px;
+  }
+  .testimonio .autor-info { text-align: left; font-size: 13.5px; }
+  .testimonio .autor-info b { display: block; font-size: 14px; }
+  .testimonio .autor-info span { color: var(--muted); }
+
+  /* Demo */
+  .demo-wrap {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 20px; padding: 36px;
+    max-width: 640px; margin: 0 auto; box-shadow: var(--shadow);
+  }
+  .demo-stage { min-height: 260px; display: flex; flex-direction: column; gap: 14px; justify-content: center; }
+  .demo-card {
+    background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px;
+    animation: fadeIn .4s ease; box-shadow: var(--shadow);
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px);} to { opacity: 1; transform: none; } }
+  .stock-bar-bg { width: 100%; height: 10px; background: #e5e7eb; border-radius: 6px; overflow: hidden; margin-top: 10px; }
+  .stock-bar-fill { height: 100%; border-radius: 6px; background: var(--alta); transition: width 1.1s ease; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; color: #fff; }
+  .badge.rojo { background: var(--alta); }
+  .badge.baja { background: var(--baja); }
+  .badge.media { background: var(--media); }
+  .badge.alta { background: var(--alta); }
+  .spinner-row { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 14px; }
+  .spinner {
+    width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--border);
+    border-top-color: var(--azul-oscuro); animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .demo-actions { text-align: center; margin-top: 24px; display: flex; gap: 12px; justify-content: center; }
+  .demo-placeholder { text-align: center; color: var(--muted); font-size: 14px; }
+  .demo-placeholder svg.icon { width: 28px; height: 28px; color: var(--border); display: block; margin: 0 auto 10px; }
+
+  /* Comparativa */
+  .comp-wrap { max-width: 760px; margin: 0 auto; background: #fff; border: 1px solid var(--border); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); }
+  table.comp { width: 100%; border-collapse: collapse; }
+  table.comp th, table.comp td { padding: 15px 20px; border-bottom: 1px solid var(--border); font-size: 14px; text-align: left; }
+  table.comp th { color: var(--muted); font-weight: 700; font-size: 12.5px; text-transform: uppercase; background: var(--bg); letter-spacing: .03em; }
+  table.comp th:nth-child(2), table.comp th:nth-child(3), table.comp td:nth-child(2), table.comp td:nth-child(3) { text-align: center; }
+  table.comp tr:last-child td { border-bottom: none; }
+  table.comp td.si { color: var(--verde); font-weight: 700; }
+  table.comp td.no { color: var(--muted); }
+  table.comp tr.destacada { background: #f0fdf4; }
+  table.comp tr.destacada td { font-weight: 700; }
+  .chip-ok, .chip-no {
+    display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px;
+    border-radius: 50%; font-size: 13px;
+  }
+  .chip-ok { background: #dcfce7; color: #16a34a; }
+  .chip-no { background: #f1f5f9; color: #94a3b8; }
+
+  /* CTA final */
+  .cta-final {
+    background: radial-gradient(800px 400px at 90% 0%, #163a5c, transparent 60%), var(--azul-oscuro);
+    color: #fff; text-align: center;
+  }
+  .cta-final .section-head h2 { color: #fff; }
+  .cta-final .section-head p { color: #b9c6d6; }
+  form.lead-form {
+    max-width: 420px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px;
+  }
+  form.lead-form input {
+    padding: 14px 16px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.06); color: #fff; font-size: 14px; font-family: inherit;
+  }
+  form.lead-form input:focus { outline: none; border-color: var(--verde-claro); background: rgba(255,255,255,0.1); }
+  form.lead-form input::placeholder { color: #8fa1b3; }
+  form.lead-form button { margin-top: 6px; }
+  .form-msg { margin-top: 14px; font-size: 14px; min-height: 20px; }
+  .form-msg.ok { color: var(--verde-claro); }
+  .form-msg.error { color: #fca5a5; }
+
+  footer { background: #08151f; color: #7b8ea3; text-align: center; padding: 34px 24px; font-size: 13px; }
+  footer .foot-brand { color: #cbd5e1; font-weight: 700; margin-bottom: 6px; }
+
+  @media (max-width: 900px) {
+    .hero-grid { grid-template-columns: 1fr; padding-bottom: 50px; }
+    .hero-copy { text-align: center; }
+    .hero p.sub { margin-left: auto; margin-right: auto; }
+    .hero-ctas, .trust { justify-content: center; }
+    .mockup { transform: none; max-width: 420px; margin: 0 auto; }
+    .cards3, .pasos { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 36px; }
+    .nav-links { display: none; }
+    .testimonio { padding: 32px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav">
+    <div class="brand"><span class="logo">
+      <svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px;stroke:#fff"><path d="M12 2l8 4.5v9L12 20l-8-4.5v-9L12 2z"/><path d="M12 11l8-4.5M12 11v9M12 11L4 6.5"/></svg>
+    </span> StockListo</div>
+    <div class="nav-links">
+      <a href="#problema">El problema</a>
+      <a href="#como-funciona">Cómo funciona</a>
+      <a href="#demo">Demo</a>
+    </div>
+    <a href="#cta" class="btn btn-primary">Probar gratis</a>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-grid">
+    <div class="hero-copy">
+      <div class="pill"><span class="dot"></span> Control de inventario con IA para restaurantes de Chile</div>
+      <h1>El inventario de tu restaurante<br><span class="accent">se repone solo</span></h1>
+      <p class="sub">StockListo monitorea tu stock en tiempo real, detecta qué se acaba y genera órdenes de compra automáticas con los mejores proveedores.</p>
+      <div class="hero-ctas">
+        <a href="#demo" class="btn btn-verde">Ver demo en vivo
+          <svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+        </a>
+        <a href="#cta" class="btn btn-outline">Quiero probarlo
+          <svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+        </a>
+      </div>
+      <div class="trust">
+        <span><svg class="icon" viewBox="0 0 24 24"><path d="M12 2l8 3v6c0 5-3.4 8.4-8 10-4.6-1.6-8-5-8-10V5l8-3z"/></svg> Sin tarjeta de crédito</span>
+        <span><svg class="icon" viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z"/></svg> Setup en 10 minutos</span>
+        <span><svg class="icon" viewBox="0 0 24 24"><path d="M12 21s-7-5.5-7-11a7 7 0 0114 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg> Pensado para Chile</span>
+      </div>
+    </div>
+    <div class="mockup">
+      <div class="mockup-bar"><span></span><span></span><span></span></div>
+      <div class="mockup-body">
+        <div class="mockup-title">Estado del inventario</div>
+        <div class="mockup-row">
+          <div><div class="nombre">Choclo</div><div class="barra-bg"><div class="barra-fill" style="width:45%;background:#dc2626"></div></div></div>
+          <span class="badge rojo">BAJO</span>
+        </div>
+        <div class="mockup-row">
+          <div><div class="nombre">Carne molida</div><div class="barra-bg"><div class="barra-fill" style="width:38%;background:#dc2626"></div></div></div>
+          <span class="badge rojo">BAJO</span>
+        </div>
+        <div class="mockup-row">
+          <div><div class="nombre">Papas</div><div class="barra-bg"><div class="barra-fill" style="width:82%;background:#16a34a"></div></div></div>
+          <span class="badge baja">OK</span>
+        </div>
+        <div class="mockup-row">
+          <div><div class="nombre">Arroz</div><div class="barra-bg"><div class="barra-fill" style="width:90%;background:#16a34a"></div></div></div>
+          <span class="badge baja">OK</span>
+        </div>
+        <div class="mockup-pedido">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+          2 pedidos generados automáticamente hoy
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="problema" id="problema">
+  <div class="container">
+    <div class="section-head">
+      <div class="eyebrow">El problema</div>
+      <h2>Tu restaurante pierde dinero todos los meses</h2>
+      <p>Un restaurante independiente promedio en Chile pierde esto cada mes por mermas, quiebres de stock y control manual.</p>
+    </div>
+    <div class="cards3">
+      <div class="card">
+        <div class="icono-card"><svg class="icon" viewBox="0 0 24 24"><path d="M3 3l18 18M10.5 6.5A8 8 0 0119 12M5 12a8 8 0 003.6 6.7"/></svg></div>
+        <div class="label">Mermas evitables</div>
+        <div class="monto">$770.000</div>
+        <div class="desc">7% de la materia prima comprada se pierde por descontrol de inventario.</div>
+      </div>
+      <div class="card">
+        <div class="icono-card"><svg class="icon" viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8M21 7v6h-6"/></svg></div>
+        <div class="label">Quiebres de stock</div>
+        <div class="monto">$350.000</div>
+        <div class="desc">Ventas perdidas cuando un ingrediente se agota sin previo aviso.</div>
+      </div>
+      <div class="card">
+        <div class="icono-card"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
+        <div class="label">Tiempo administrativo</div>
+        <div class="monto">$252.000</div>
+        <div class="desc">≈42 horas al mes controlando stock manualmente en papel o Excel.</div>
+      </div>
+    </div>
+    <div class="total-banner">
+      <div>Pérdida total estimada por restaurante</div>
+      <div class="num">≈ $1.370.000 CLP / mes</div>
+    </div>
+  </div>
+</section>
+
+<section id="como-funciona">
+  <div class="container">
+    <div class="section-head">
+      <div class="eyebrow">Cómo funciona</div>
+      <h2>Cuatro pasos, cero intervención manual</h2>
+      <p>Desde que se vende un plato hasta que el proveedor recibe la orden de compra, todo pasa solo.</p>
+    </div>
+    <div class="pasos">
+      <div class="paso">
+        <div class="icono"><svg class="icon" viewBox="0 0 24 24"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2V2z"/><path d="M9 7h6M9 11h6"/></svg></div>
+        <div class="num">PASO 1</div>
+        <h3>Venta</h3>
+        <p>Se registra la venta y se descuenta el inventario al instante.</p>
+      </div>
+      <div class="paso">
+        <div class="icono"><svg class="icon" viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8M21 7v6h-6"/></svg></div>
+        <div class="num">PASO 2</div>
+        <h3>Detección de stock bajo</h3>
+        <p>El sistema detecta ingredientes bajo su mínimo definido.</p>
+      </div>
+      <div class="paso">
+        <div class="icono"><svg class="icon" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="3"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/></svg></div>
+        <div class="num">PASO 3</div>
+        <h3>Agente decide</h3>
+        <p>La IA elige proveedor, cantidad y urgencia con justificación.</p>
+      </div>
+      <div class="paso">
+        <div class="icono"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></div>
+        <div class="num">PASO 4</div>
+        <h3>Notificación enviada</h3>
+        <p>Encargado y proveedor reciben el aviso automáticamente.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="problema">
+  <div class="container">
+    <div class="testimonio">
+      <div class="quote-mark">&ldquo;</div>
+      <p class="texto">"A pesar de tener un POS instalado, el sistema requiere mucho trabajo y sigue prefiriendo realizar varios controles manualmente."</p>
+      <div class="autor">
+        <div class="avatar">R</div>
+        <div class="autor-info"><b>Rossana</b><span>Dueña, Moomba Bar (Calama)</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="demo">
+  <div class="container">
+    <div class="section-head">
+      <div class="eyebrow">Demo</div>
+      <h2>Pruébalo tú mismo</h2>
+      <p>Esta es una simulación con datos de ejemplo del flujo completo de StockListo.</p>
+    </div>
+    <div class="demo-wrap">
+      <div class="demo-stage" id="demoStage">
+        <p class="demo-placeholder">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2V2z"/></svg>
+          Haz clic en el botón para simular una venta
+        </p>
+      </div>
+      <div class="demo-actions">
+        <button class="btn btn-verde" id="btnSimular" onclick="simularVenta()">Simular una venta</button>
+        <button class="btn btn-outline" style="color:var(--ink); border-color:var(--border);" onclick="reiniciarDemo()">Reiniciar demo</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="problema">
+  <div class="container">
+    <div class="section-head">
+      <div class="eyebrow">Comparativa</div>
+      <h2>Por qué somos distintos</h2>
+      <p>Fudo y Toteat te muestran el problema. StockListo lo resuelve solo.</p>
+    </div>
+    <div class="comp-wrap">
+      <table class="comp">
+        <thead><tr><th>Capacidad</th><th>Fudo / Toteat</th><th>StockListo</th></tr></thead>
+        <tbody>
+          <tr><td>Reporte de inventario</td><td class="si"><span class="chip-ok">✓</span></td><td class="si"><span class="chip-ok">✓</span></td></tr>
+          <tr><td>Detección automática de stock bajo</td><td class="no"><span class="chip-no">–</span></td><td class="si"><span class="chip-ok">✓</span></td></tr>
+          <tr class="destacada"><td>Decide qué pedir, a quién y cuánto</td><td class="no"><span class="chip-no">✕</span></td><td class="si"><span class="chip-ok">✓</span> con IA</td></tr>
+          <tr class="destacada"><td>Ejecuta y notifica la orden de compra</td><td class="no"><span class="chip-no">✕</span></td><td class="si"><span class="chip-ok">✓</span> automático</td></tr>
+          <tr><td>Requiere revisión manual diaria</td><td class="no">Sí</td><td class="si">No</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="cta-final" id="cta">
+  <div class="container">
+    <div class="section-head">
+      <div class="eyebrow" style="color:var(--verde-claro)">Empieza hoy</div>
+      <h2>Quiero probarlo en mi restaurante</h2>
+      <p>Déjanos tus datos y te contactamos para activar StockListo en tu local.</p>
+    </div>
+    <form class="lead-form" id="leadForm" onsubmit="return enviarLead(event)">
+      <input type="text" id="leadNombre" placeholder="Tu nombre" required />
+      <input type="email" id="leadEmail" placeholder="Tu email" required />
+      <button type="submit" class="btn btn-verde" id="btnEnviar">Quiero probarlo
+        <svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+      </button>
+      <div class="form-msg" id="formMsg"></div>
+    </form>
+  </div>
+</section>
+
+<footer>
+  <div class="foot-brand">StockListo</div>
+  Sistema de control de inventario y pedidos automáticos para restaurantes de Chile · © 2026
+</footer>
+
+<script>
+  // --- Demo interactiva simulada (datos de ejemplo, no llama al backend real) ---
+  let demoEnCurso = false;
+
+  function reiniciarDemo() {
+    if (demoEnCurso) return;
+    document.getElementById('demoStage').innerHTML = `
+      <p class="demo-placeholder">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2V2z"/></svg>
+        Haz clic en el botón para simular una venta
+      </p>`;
+  }
+
+  async function simularVenta() {
+    if (demoEnCurso) return;
+    demoEnCurso = true;
+    const stage = document.getElementById('demoStage');
+    const btn = document.getElementById('btnSimular');
+    btn.disabled = true;
+    stage.innerHTML = '';
+
+    const espera = (ms) => new Promise(r => setTimeout(r, ms));
+
+    // Paso 1: venta registrada + stock bajando
+    stage.innerHTML = `
+      <div class="demo-card">
+        <strong>🧾 Venta registrada:</strong> 2x Pastel de choclo
+        <div style="display:flex; justify-content:space-between; font-size:13px; color:var(--muted); margin-top:10px;">
+          <span>Choclo</span><span id="stockLabel">8 kg</span>
+        </div>
+        <div class="stock-bar-bg"><div class="stock-bar-fill" id="stockBar" style="width:100%"></div></div>
+      </div>`;
+    await espera(300);
+    document.getElementById('stockBar').style.width = '50%';
+    document.getElementById('stockLabel').textContent = '5 kg';
+    await espera(1200);
+
+    const card1 = document.querySelector('.demo-card');
+    const badge = document.createElement('div');
+    badge.style.marginTop = '10px';
+    badge.innerHTML = '<span class="badge rojo">BAJO MÍNIMO</span> <span style="font-size:12px;color:var(--muted)">mínimo definido: 10 kg</span>';
+    card1.appendChild(badge);
+    await espera(600);
+
+    // Paso 2: agente decidiendo
+    const pensando = document.createElement('div');
+    pensando.className = 'demo-card';
+    pensando.innerHTML = '<div class="spinner-row"><div class="spinner"></div> El agente está decidiendo…</div>';
+    stage.appendChild(pensando);
+    await espera(1500);
+    pensando.remove();
+
+    // Paso 3: decisión del agente
+    const decision = document.createElement('div');
+    decision.className = 'demo-card';
+    decision.innerHTML = `
+      <strong>🤖 Decisión del agente</strong>
+      <div style="margin-top:8px; font-size:14px;">
+        Proveedor: <b>AgroSur</b> · Cantidad: <b>7.6 kg</b> · Urgencia: <span class="badge baja">BAJA</span>
+      </div>
+      <div style="margin-top:8px; font-size:13px; color:var(--muted);">
+        Stock actual 5kg bajo el mínimo de 10kg; consumo promedio 0.6kg/día; con lead time de 1 día
+        se pide 7.6kg para volver a un colchón seguro sobre el mínimo.
+      </div>`;
+    stage.appendChild(decision);
+    await espera(1400);
+
+    // Paso 4: notificaciones enviadas
+    const notifs = document.createElement('div');
+    notifs.className = 'demo-card';
+    notifs.innerHTML = `
+      <div>✅ Encargado notificado <span style="color:var(--muted); font-size:13px;">(email)</span></div>
+      <div style="margin-top:6px;">✅ Proveedor notificado <span style="color:var(--muted); font-size:13px;">(AgroSur, email)</span></div>`;
+    stage.appendChild(notifs);
+
+    btn.disabled = false;
+    demoEnCurso = false;
+  }
+
+  // --- Formulario de leads: inserta en la tabla real "leads" de Supabase ---
+  const SUPABASE_URL = "https://wdcvrvvojwovtxacahxw.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkY3ZydnZvandvdnR4YWNhaHh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMxNzQ1NTUsImV4cCI6MjA5ODc1MDU1NX0.eJsg3IpPiiQppqfCStpF6GwrKEf2SyFE3c94HI6pmGM";
+
+  async function enviarLead(evt) {
+    evt.preventDefault();
+    const nombre = document.getElementById('leadNombre').value.trim();
+    const email = document.getElementById('leadEmail').value.trim();
+    const btn = document.getElementById('btnEnviar');
+    const msg = document.getElementById('formMsg');
+
+    btn.disabled = true;
+    msg.className = 'form-msg';
+    msg.textContent = 'Enviando...';
+
+    try {
+      const resp = await fetch(`${SUPABASE_URL}/rest/v1/leads`, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal',
+        },
+        body: JSON.stringify({ nombre, email }),
+      });
+
+      if (!resp.ok) throw new Error(`Supabase respondió ${resp.status}`);
+
+      msg.className = 'form-msg ok';
+      msg.textContent = '¡Listo! Te contactaremos pronto para activar StockListo en tu restaurante.';
+      document.getElementById('leadForm').reset();
+    } catch (err) {
+      msg.className = 'form-msg error';
+      msg.textContent = 'Hubo un problema al enviar tus datos. Intenta de nuevo en un momento.';
+      console.error('Error insertando lead:', err);
+    } finally {
+      btn.disabled = false;
+    }
+    return false;
+  }
+</script>
+
+</body>
+</html>
